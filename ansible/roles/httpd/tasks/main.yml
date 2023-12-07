@@ -1,0 +1,62 @@
+---
+- name: install softs on CentOS
+  yum:
+    name:
+      - wget
+      - epel-release
+      - httpd
+      - tftp-server
+      - dhcp
+      - syslinux
+    state: present
+    update_cache: true
+
+- name: Download ISO image CentOS 7
+  get_url:
+    url: http://mirror.yandex.ru/centos/7.9.2009/isos/x86_64/CentOS-7-x86_64-DVD-2009.iso
+    dest: /root/CentOS-7-x86_64-DVD-2009.iso
+    mode: '0755'
+
+- name: Create ISO directory
+  file:
+    path: /var/www/centos7
+    state: directory
+    mode: '0755'
+
+- name: Mount ISO image
+  mount:
+    path: /mnt
+    src: /root/CentOS-7-x86_64-DVD-2009.iso
+    fstype: iso9660
+    opts: ro,loop
+    state: mounted
+
+- name: copy ALL files from /mnt
+  copy:
+    src: /mnt/
+    dest: /var/www/centos7/
+    mode: 0755
+    remote_src: yes 
+    directory_mode: yes
+
+- name: copy ks.cfg
+  template:
+    src: ks.cfg
+    dest: /var/www/centos7/ks.cfg 
+    owner: root
+    group: root
+    mode: 0755
+
+- name: set up httpd config
+  template:
+    src: pxeboot.conf
+    dest: /etc/httpd/conf.d/pxeboot.conf 
+    owner: root
+    group: root
+    mode: 0640
+
+- name: restart httpd
+  service:
+    name: httpd
+    state: restarted
+    enabled: true
